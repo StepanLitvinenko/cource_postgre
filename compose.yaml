@@ -10,4 +10,5 @@ services:
     volumes:
       - ./postgresql_data:/var/lib/postgresql
     environment:
-      POSTGRES_PASSWORD: 12345678
+      POSTGRES_PASSWORD: example
+
