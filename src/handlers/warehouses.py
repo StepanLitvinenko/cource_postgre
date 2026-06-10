@@ -40,6 +40,7 @@ class Warehouse:
     id: int
     city: str
     address: str
+    is_central: bool
     label: str | None
 
 
@@ -52,6 +53,7 @@ def _render_warehouse(warehouse: Warehouse) -> None:
     table.add_row("ID", str(warehouse.id))
     table.add_row("Город", warehouse.city)
     table.add_row("Адрес", warehouse.address)
+    table.add_row("Центральный?", str(warehouse.is_central))
     table.add_row("Метка", warehouse.label or "")
 
     panel = Panel(
@@ -72,6 +74,7 @@ def list_warehouses() -> None:
     table.add_column("ID", style="dim", width=6, justify="right")
     table.add_column("Город", style="green", min_width=20)
     table.add_column("Адрес", style="yellow", min_width=30)
+    table.add_column("Центральный?", style="magenta", min_width=15)
     table.add_column("Метка", style="magenta", min_width=15)
 
     with conn.cursor(row_factory=class_row(Warehouse)) as cur:
@@ -83,6 +86,7 @@ def list_warehouses() -> None:
             str(warehouse.id),
             warehouse.city,
             warehouse.address,
+            str(warehouse.is_central),
             warehouse.label or "",
         )
     console.print(table)
@@ -120,6 +124,7 @@ def add_warehouse() -> None:
 
 @command("edit warehouse", "редактировать склад", CATEGORY_WAREHOUSES)
 def edit_warehouse(_id: str) -> None:
+
     conn = get_conn()
     with conn.cursor(row_factory=class_row(Warehouse)) as cur:
         cur.execute("SELECT * FROM catalog.warehouses WHERE id = %s", (_id,))
@@ -141,16 +146,33 @@ def edit_warehouse(_id: str) -> None:
     label = (
         prompt("Метка (необязательно): ", default=warehouse.label or "").strip() or None
     )
+    is_central = (
+        prompt("Сделать центральным (предыдущий центральный больше таковым не будет): ", default=str(warehouse.is_central ) or "").strip() or None
+    )
     conn.execute(
         """UPDATE catalog.warehouses SET city = %s, address = %s, label = %s
         WHERE id = %s""",
         (city, address, label, _id),
     )
+
+    if is_central:
+        with conn.cursor(row_factory=class_row(Warehouse)) as cur:
+            cur.execute("SELECT * FROM catalog.warehouses WHERE is_central = true;")
+            wh: list[Warehouse] = cur.fetchall()
+            if len(wh) >1:
+                raise Exception("Больше одного центрального склада, битая база, работать невозможно")
+            elif len(wh) == 1:
+                console.print(f"[green]Текущий  центральный склад в городе {wh[0].city} и ID: {wh[0].id} больше не будет центральным [/green]")
+
+            cur.execute("UPDATE catalog.warehouses SET is_central = false WHERE is_central = true;")
+            cur.execute(f"UPDATE catalog.warehouses SET is_central = true WHERE id = {_id}; ")
+            console.print(
+                f"[green]новый центральный склад теперь у IDID: {_id} [/green]")
+
     if label:
         console.print(f"[green]Склад в городе {city} ({label}) обновлен [/green]")
     else:
         console.print(f"[green]Склад в городе {city} обновлен [/green]")
-
 
 @command("delete warehouse", "удалить склад", CATEGORY_WAREHOUSES)
 def delete_warehouse(_id: str) -> None:
