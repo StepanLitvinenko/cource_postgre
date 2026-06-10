@@ -8,7 +8,7 @@ from prompt_toolkit.completion import NestedCompleter
 CATEGORY_GENERAL: Final[str] = "ПРОЧЕЕ"
 CATEGORY_WAREHOUSES: Final[str] = "СКЛАДЫ"
 CATEGORY_PRODUCTS: Final[str] = "ТОВАРЫ"
-CATEGORY_CATEGORIES: Final[str] = "ТОВАРЫ"
+CATEGORY_CATEGORIES: Final[str] = "КАТЕГОРИИ"
 
 CATEGORIES: Final[Sequence[str]] = [
     CATEGORY_PRODUCTS,
