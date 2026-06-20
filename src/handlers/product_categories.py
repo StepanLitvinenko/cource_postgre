@@ -137,12 +137,28 @@ def delete_category(_id: str) -> None:
 
     _render_category(categoryProduct)
 
-    answer = prompt("Вы уверены, удаление категории приведёт к удалению всех товаров этой категории? (y/n, д/н): ",
-                    validator=YesNoValidator())
+    with conn.cursor() as cur:
+        cur.execute("SELECT COUNT(*) FROM catalog.products WHERE category_id = %s", (_id,))
+        count = cur.fetchone()[0]
+
+    warning = ""
+    if count > 0:
+        warning = f" В категории {count} товаров, они будут удалены!"
+
+    answer = prompt(
+        f"Вы уверены, что хотите удалить категорию?{warning} (y/n, д/н): ",
+        validator=YesNoValidator()
+    )
 
     if YesNoValidator.is_yes(answer):
-        conn.execute("DELETE FROM catalog.product_categories WHERE id = %s", (_id,))
-        conn.execute("DELETE FROM catalog.products WHERE category = %s", (categoryProduct.category_type,))
+        with conn.cursor() as cur:
+
+            cur.execute("DELETE FROM catalog.products WHERE category_id = %s", (_id,))
+
+            cur.execute("DELETE FROM catalog.product_categories WHERE id = %s", (_id,))
+
+            conn.commit()
 
         console.print(
-            f"[green]Удалена категория {categoryProduct.category_type}, а также все товары, относящиеся к ней [/green]")
+            f"[green]Удалена категория {categoryProduct.category_type} и все товары в ней[/green]"
+        )

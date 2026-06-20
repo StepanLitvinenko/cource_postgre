@@ -17,7 +17,8 @@ class Product:
     sku: str
     name: str
     price: Decimal
-    category: str
+    category_id: int  # Было 'category: str'
+    category_name: str | None = None  # Для отображения названия категории
 
 
 def _render_product(product: Product):  # pylint: disable=unused-argument
@@ -48,13 +49,8 @@ def _render_product(product: Product):  # pylint: disable=unused-argument
 
 @command("list products", "список всех товаров", CATEGORY_PRODUCTS)
 def list_products() -> None:
-    """
-    Выводит список всех продуктов из таблицы catalog.products.
-    Используйте rich.table.Table для отображения данных.
-    Колонки: ID, SKU, Название, Цена, Категория
-    """
     conn = get_conn()
-    table = Table(title="Продукт", show_header=True, header_style="bold cyan")
+    table = Table(title="Продукты", show_header=True, header_style="bold cyan")
 
     table.add_column("ID", style="dim", width=6, justify="right")
     table.add_column("SKU", style="green", min_width=20)
@@ -62,17 +58,22 @@ def list_products() -> None:
     table.add_column("Цена", style="magenta", min_width=15)
     table.add_column("Категория", style="red", min_width=15)
 
-    with conn.cursor(row_factory=class_row(Product)) as cur:
-        cur.execute("SELECT * FROM catalog.products")
-        products: list[Product] = cur.fetchall()
+    with conn.cursor() as cur:
+        cur.execute("""
+            SELECT p.id, p.sku, p.name, p.price, pc.category_type
+            FROM catalog.products p
+            JOIN catalog.product_categories pc ON p.category_id = pc.id
+            ORDER BY p.id
+        """)
+        products = cur.fetchall()
 
     for product in products:
         table.add_row(
-            str(product.id),
-            product.sku,
-            product.name,
-            str(product.price),
-            product.category
+            str(product[0]),
+            product[1],
+            product[2],
+            str(product[3]),
+            product[4]
         )
     console.print(table)
 
@@ -95,9 +96,6 @@ def show_product(_id: str) -> None:
     _render_product(product)
 
 
-from prompt_toolkit.shortcuts import choice
-
-
 @command("add product", "добавить товар (интерактивно)", CATEGORY_PRODUCTS)
 def add_product() -> None:
     conn = get_conn()
@@ -109,26 +107,22 @@ def add_product() -> None:
     category_id, category_name = select_category()
 
     conn.execute(
-        "INSERT INTO catalog.products (sku, name, price, category) VALUES (%s, %s, %s, %s)",
+        "INSERT INTO catalog.products (sku, name, price, category_id) VALUES (%s, %s, %s, %s)",
         (sku, name, price, category_id),
     )
 
     console.print(f"[green]Продукт {name} (SKU: {sku}, категория: {category_name}) добавлен[/green]")
 
+
 @command("edit product", "редактировать товар", CATEGORY_PRODUCTS)
 def edit_product(_id: str) -> None:
-    """
-    Редактирует существующий продукт.
-    Сначала проверяет существование продукта по ID.
-    Предлагает текущие значения как default при вводе новых данных.
-    """
     conn = get_conn()
     with conn.cursor(row_factory=class_row(Product)) as cur:
         cur.execute("SELECT * FROM catalog.products WHERE id = %s", (_id,))
         product: Product | None = cur.fetchone()
 
     if product is None:
-        render_error(f"Продкут с ID {_id} не найден")
+        render_error(f"Продукт с ID {_id} не найден")
         return
 
     sku = prompt(
@@ -139,21 +133,18 @@ def edit_product(_id: str) -> None:
         "Имя: ", default=product.name, validator=NonEmptyValidator()
     ).strip()
     price = prompt(
-        "Цена: ",default= str(product.price), validator=PriceValidator()
+        "Цена: ", default=str(product.price), validator=PriceValidator()
     ).strip()
 
     category_id, category_name = select_category()
 
-    category = category_id
-
     conn.execute(
-        """UPDATE catalog.products SET sku = %s, name = %s, price = %s, category = %s
+        """UPDATE catalog.products SET sku = %s, name = %s, price = %s, category_id = %s
         WHERE id = %s""",
-        (sku, name, price, str(category), _id),
+        (sku, name, price, category_id, _id),
     )
 
-    console.print(f"[green] Продукт {sku, name, price, str(category), _id} обновлен [/green]")
-
+    console.print(f"[green]Продукт {name} (SKU: {sku}, категория: {category_name}) обновлен[/green]")
 @command("delete product", "удалить товар", CATEGORY_PRODUCTS)
 def delete_product(_id: str) -> None:
     """
