@@ -19,10 +19,10 @@ depends_on: Union[str, Sequence[str], None] = ${repr(depends_on)}
 
 
 def upgrade() -> None:
-    with open(f"alembic/sql/{revision}/up.sql") as file:
+    with open(f"alembic/versions/sql/{revision}/up.sql") as file:
         op.execute(file.read())
 
 
 def downgrade() -> None:
-    with open(f"alembic/sql/{revision}/down.sql") as file:
+    with open(f"alembic/versions/sql/{revision}/down.sql") as file:
         op.execute(file.read())
