@@ -1,0 +1,76 @@
+@startuml
+!define table(x) entity x << (T,#FFAAAA) >>
+!define primary_key(x) <b><u>x</u></b>
+!define foreign_key(x) <i>x</i>
+
+' Сущности
+table(ProductCategory) {
+  *primary_key(id) : INTEGER
+  --
+  category_type : VARCHAR
+}
+
+table(Product) {
+  *primary_key(id) : INTEGER
+  --
+  sku : VARCHAR
+  name : VARCHAR
+  price : DECIMAL
+  foreign_key(category_id) : INTEGER
+}
+
+table(Warehouse) {
+  *primary_key(id) : INTEGER
+  --
+  city : VARCHAR
+  address : VARCHAR
+  is_central : BOOLEAN
+  label : VARCHAR
+}
+
+table(Order) {
+  *primary_key(id) : INTEGER
+  --
+  status : VARCHAR
+  total_amount : DECIMAL
+  created_at : TIMESTAMP
+  foreign_key(warehouse_id) : INTEGER
+}
+
+table(OrderItem) {
+  *primary_key(id) : INTEGER
+  --
+  foreign_key(order_id) : INTEGER
+  foreign_key(product_id) : INTEGER
+  quantity : INTEGER
+  price : DECIMAL
+}
+
+' Связи (Crow's Foot нотация)
+ProductCategory ||--o{ Product : "содержит"
+Product ||--o{ OrderItem : "присутствует в"
+Warehouse ||--o{ Order : "обслуживает"
+Order ||--o{ OrderItem : "состоит из"
+
+' Дополнительные комментарии к связям
+note right of ProductCategory
+  Одна категория может содержать
+  много товаров (1 : M)
+end note
+
+note right of Product
+  Один товар может быть
+  во многих заказах (1 : M)
+end note
+
+note right of Warehouse
+  Один склад может обслуживать
+  много заказов (1 : M)
+end note
+
+note right of Order
+  Один заказ может содержать
+  много позиций (1 : M)
+end note
+
+@enduml
