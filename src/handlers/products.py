@@ -2,15 +2,15 @@ from dataclasses import dataclass
 from decimal import Decimal
 from prompt_toolkit import prompt
 from prompt_toolkit.completion import WordCompleter
+
 from commands import command, CATEGORY_PRODUCTS
 from rich.table import Table
 from rich.panel import Panel
 from console import console, render_error
 from db import get_conn
 from psycopg.rows import class_row
-from validators import ChoiceValidator, NonEmptyValidator, YesNoValidator
-
-
+from validators import ChoiceValidator, NonEmptyValidator, YesNoValidator, PriceValidator
+from .category_selector import  select_category
 @dataclass
 class Product:
     id: int
@@ -95,44 +95,26 @@ def show_product(_id: str) -> None:
     _render_product(product)
 
 
+from prompt_toolkit.shortcuts import choice
+
+
 @command("add product", "добавить товар (интерактивно)", CATEGORY_PRODUCTS)
 def add_product() -> None:
-
     conn = get_conn()
 
     sku = prompt("SKU: ", validator=NonEmptyValidator()).strip()
     name = prompt("Имя: ", validator=NonEmptyValidator()).strip()
-    price = prompt("Цена: ", validator=NonEmptyValidator()).strip()
+    price = prompt("Цена: ", validator=PriceValidator()).strip()
 
-    categories = conn.execute(
-        "SELECT id, category_type FROM catalog.product_categories ORDER BY id"
-    ).fetchall()
-
-    if not categories:
-        render_error("Нет ни одной категории. Сначала создайте категорию.")
-        return
-
-    from .product_categories import list_categories
-
-    list_categories()
-
-    while True:
-        try:
-            category_id = int(prompt("Введите ID категории: ", validator=NonEmptyValidator()).strip())
-            if any(cat_id == category_id for cat_id, _ in categories):
-                break
-            else:
-                render_error(f"Категории с ID {category_id} не существует. Попробуйте снова.")
-        except ValueError:
-            render_error("ID должен быть числом.")
+    category_id, category_name = select_category()
 
     conn.execute(
         "INSERT INTO catalog.products (sku, name, price, category) VALUES (%s, %s, %s, %s)",
         (sku, name, price, category_id),
     )
 
-    category_name = next(name for cid, name in categories if cid == category_id)
     console.print(f"[green]Продукт {name} (SKU: {sku}, категория: {category_name}) добавлен[/green]")
+
 @command("edit product", "редактировать товар", CATEGORY_PRODUCTS)
 def edit_product(_id: str) -> None:
     """
@@ -157,12 +139,12 @@ def edit_product(_id: str) -> None:
         "Имя: ", default=product.name, validator=NonEmptyValidator()
     ).strip()
     price = prompt(
-        "Цена: ",default= str(product.price), validator=NonEmptyValidator()
+        "Цена: ",default= str(product.price), validator=PriceValidator()
     ).strip()
 
-    category = prompt(
-        "Категория: ", default=product.category, validator=NonEmptyValidator()
-    ).strip()
+    category_id, category_name = select_category()
+
+    category = category_id
 
     conn.execute(
         """UPDATE catalog.products SET sku = %s, name = %s, price = %s, category = %s

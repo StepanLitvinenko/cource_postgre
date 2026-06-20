@@ -1,5 +1,6 @@
 from dataclasses import dataclass
 from decimal import Decimal
+from typing import List
 
 from prompt_toolkit import prompt
 from prompt_toolkit.completion import WordCompleter
@@ -35,6 +36,21 @@ def _render_category(category: ProductCategory):  # pylint: disable=unused-argum
     )
 
     console.print(panel)
+
+
+def get_list_categories() -> List[str]:
+    conn = get_conn()
+    table = Table(title="Категории", show_header=True, header_style="bold cyan")
+    ret: List[str] = []
+
+    with conn.cursor(row_factory=class_row(ProductCategory)) as cur:
+        cur.execute("SELECT * FROM catalog.product_categories")
+        categories: list[ProductCategory] = cur.fetchall()
+
+    for category in categories:
+        ret.append(category.category_type)
+
+    return ret
 
 
 @command("list categories", "список всех категорий", CATEGORY_CATEGORIES)
@@ -126,7 +142,7 @@ def delete_category(_id: str) -> None:
 
     if YesNoValidator.is_yes(answer):
         conn.execute("DELETE FROM catalog.product_categories WHERE id = %s", (_id,))
-        conn.execute("DELETE FROM catalog.products WHERE category_type = %s", (categoryProduct.category_type,))
+        conn.execute("DELETE FROM catalog.products WHERE category = %s", (categoryProduct.category_type,))
 
         console.print(
             f"[green]Удалена категория {categoryProduct.category_type}, а также все товары, относящиеся к ней [/green]")
