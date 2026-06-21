@@ -285,7 +285,7 @@ def _add_order_item(order_id: int) -> None:
 
     with conn.cursor() as cur:
         cur.execute(
-            "INSERT INTO sales.order_items (order_id, product_id, quantity, price) VALUES (%s, %s, %s, %s)",
+            "INSERT INTO sales.order_items (order_id, product_id, quantity, price, updated_at) VALUES (%s, %s, %s, %s, CURRENT_TIMESTAMP)",
             (order_id, product_id, quantity, price)
         )
         conn.commit()
