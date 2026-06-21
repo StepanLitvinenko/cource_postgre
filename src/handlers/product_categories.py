@@ -142,7 +142,7 @@ def delete_category(_id: str) -> None:
 
     if YesNoValidator.is_yes(answer):
         conn.execute("DELETE FROM catalog.product_categories WHERE id = %s", (_id,))
-        conn.execute("DELETE FROM catalog.products WHERE category = %s", (categoryProduct.category_type,))
+        conn.execute("DELETE FROM catalog.products WHERE category = %s", (_id,))
 
         console.print(
             f"[green]Удалена категория {categoryProduct.category_type}, а также все товары, относящиеся к ней [/green]")
