@@ -543,6 +543,17 @@ def publish_order(_id: str) -> None:
         render_error("Нельзя опубликовать пустой заказ. Добавьте хотя бы одну позицию.")
         return
 
+    show_order(_id)
+
+    confirm = YesNoValidator.is_yes(
+        prompt("Точно публикуем заказ?: ",
+               validator=YesNoValidator()).strip()
+    )
+
+    if not confirm:
+        console.print("[yellow]Публикация отменена[/yellow]")
+        return
+
     with conn.cursor() as cur:
         cur.execute("UPDATE sales.orders SET status = 'new' WHERE sales.orders.id = %s", (_id,))
         conn.commit()
