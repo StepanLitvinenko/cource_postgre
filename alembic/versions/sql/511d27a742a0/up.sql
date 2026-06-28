@@ -29,14 +29,14 @@ COMMENT ON COLUMN sales.orders.warehouse_id IS 'ID склада отгрузки
 
 
 CREATE TABLE sales.order_items (
-    id SERIAL PRIMARY KEY,
     order_id INTEGER NOT NULL,
     product_id INTEGER NOT NULL,
     quantity INTEGER NOT NULL CHECK (quantity > 0),
     price DECIMAL(10, 2) NOT NULL CHECK (price > 0),
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
 
-    CONSTRAINT unique_order_product UNIQUE(order_id, product_id),
+    CONSTRAINT pk_order_items PRIMARY KEY (order_id, product_id),
 
     CONSTRAINT fk_order_item_order
         FOREIGN KEY (order_id)
