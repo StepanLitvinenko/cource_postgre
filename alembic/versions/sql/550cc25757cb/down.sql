@@ -1,0 +1,1 @@
+ALTER TABLE sales.order_items DROP COLUMN updated_at;

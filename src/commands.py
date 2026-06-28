@@ -9,12 +9,14 @@ CATEGORY_GENERAL: Final[str] = "ПРОЧЕЕ"
 CATEGORY_WAREHOUSES: Final[str] = "СКЛАДЫ"
 CATEGORY_PRODUCTS: Final[str] = "ТОВАРЫ"
 CATEGORY_CATEGORIES: Final[str] = "КАТЕГОРИИ"
+CATEGORY_ORDERS: Final[str] = "ЗАКАЗЫ"
 
 CATEGORIES: Final[Sequence[str]] = [
     CATEGORY_PRODUCTS,
     CATEGORY_WAREHOUSES,
     CATEGORY_GENERAL,
-    CATEGORY_CATEGORIES
+    CATEGORY_CATEGORIES,
+    CATEGORY_ORDERS
 ]
 
 

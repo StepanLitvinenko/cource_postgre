@@ -208,6 +208,18 @@ def delete_warehouse(_id: str) -> None:
         render_error(f"Склад с ID {_id} не найден")
         return
 
+
+    if warehouse.is_central:
+        render_error("Нельзя удалить центральный склад.")
+        return
+
+    with conn.cursor() as cur:
+        cur.execute("SELECT COUNT(*) FROM sales.orders WHERE warehouse_id = %s", (_id,))
+        count = cur.fetchone()[0]
+        if count > 0:
+            render_error(f"Отказано. На складе висит {count} заказов.")
+            return
+
     _render_warehouse(warehouse)
 
     answer = prompt("Вы уверены? (y/n, д/н): ", validator=YesNoValidator())

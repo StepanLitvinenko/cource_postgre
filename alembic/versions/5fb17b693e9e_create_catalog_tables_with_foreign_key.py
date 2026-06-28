@@ -1,21 +1,21 @@
-"""${message}
+"""create_catalog_tables_with_foreign_key
 
-Revision ID: ${up_revision}
-Revises: ${down_revision | comma,n}
-Create Date: ${create_date}
+Revision ID: 5fb17b693e9e
+Revises: 
+Create Date: 2026-06-20 14:12:12.243549
 
 """
 from typing import Sequence, Union
 
 from alembic import op
 import sqlalchemy as sa
-${imports if imports else ""}
+
 
 # revision identifiers, used by Alembic.
-revision: str = ${repr(up_revision)}
-down_revision: Union[str, None] = ${repr(down_revision)}
-branch_labels: Union[str, Sequence[str], None] = ${repr(branch_labels)}
-depends_on: Union[str, Sequence[str], None] = ${repr(depends_on)}
+revision: str = '5fb17b693e9e'
+down_revision: Union[str, None] = None
+branch_labels: Union[str, Sequence[str], None] = None
+depends_on: Union[str, Sequence[str], None] = None
 
 
 def upgrade() -> None:
