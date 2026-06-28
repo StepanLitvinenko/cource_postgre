@@ -23,3 +23,14 @@ def connect() -> None:
         port=DB_PORT,
         autocommit=True,
     )
+
+
+def close() -> None:
+    if _CONN is not None:
+        _CONN.close()
+
+
+def get_conn() -> Connection:
+    if _CONN is None:
+        raise RuntimeError("Database connection has not been established")
+    return _CONN
