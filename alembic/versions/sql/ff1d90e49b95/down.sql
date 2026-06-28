@@ -1,0 +1,57 @@
+
+ALTER SCHEMA catalog OWNER TO app_user;
+ALTER SCHEMA sales OWNER TO app_user;
+
+ALTER TABLE catalog.product_categories OWNER TO app_user;
+ALTER TABLE catalog.products OWNER TO app_user;
+ALTER TABLE catalog.warehouses OWNER TO app_user;
+ALTER TABLE sales.orders OWNER TO app_user;
+ALTER TABLE sales.order_items OWNER TO app_user;
+
+ALTER SEQUENCE catalog.product_categories_id_seq OWNER TO app_user;
+ALTER SEQUENCE catalog.products_id_seq OWNER TO app_user;
+ALTER SEQUENCE catalog.warehouses_id_seq OWNER TO app_user;
+ALTER SEQUENCE sales.orders_id_seq OWNER TO app_user;
+
+
+REVOKE ALL PRIVILEGES ON SCHEMA catalog FROM catalog_manager;
+REVOKE ALL PRIVILEGES ON ALL TABLES IN SCHEMA catalog FROM catalog_manager;
+REVOKE ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA catalog FROM catalog_manager;
+
+
+REVOKE ALL PRIVILEGES ON SCHEMA sales FROM sales_manager;
+REVOKE ALL PRIVILEGES ON ALL TABLES IN SCHEMA sales FROM sales_manager;
+REVOKE ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA sales FROM sales_manager;
+
+REVOKE USAGE ON SCHEMA catalog FROM sales_manager;
+REVOKE SELECT ON ALL TABLES IN SCHEMA catalog FROM sales_manager;
+
+
+REVOKE USAGE ON SCHEMA catalog FROM PUBLIC;
+REVOKE SELECT ON ALL TABLES IN SCHEMA catalog FROM PUBLIC;
+
+
+ALTER DEFAULT PRIVILEGES FOR ROLE catalog_manager IN SCHEMA catalog
+    REVOKE ALL PRIVILEGES ON TABLES FROM catalog_manager;
+
+ALTER DEFAULT PRIVILEGES FOR ROLE catalog_manager IN SCHEMA catalog
+    REVOKE ALL PRIVILEGES ON SEQUENCES FROM catalog_manager;
+
+ALTER DEFAULT PRIVILEGES FOR ROLE sales_manager IN SCHEMA sales
+    REVOKE ALL PRIVILEGES ON TABLES FROM sales_manager;
+
+ALTER DEFAULT PRIVILEGES FOR ROLE sales_manager IN SCHEMA sales
+    REVOKE ALL PRIVILEGES ON SEQUENCES FROM sales_manager;
+
+ALTER DEFAULT PRIVILEGES IN SCHEMA catalog
+    REVOKE SELECT ON TABLES FROM PUBLIC;
+
+ALTER DEFAULT PRIVILEGES IN SCHEMA catalog
+    REVOKE USAGE ON SEQUENCES FROM PUBLIC;
+
+ALTER DEFAULT PRIVILEGES IN SCHEMA catalog
+    REVOKE SELECT ON TABLES FROM sales_manager;
+
+
+REVOKE catalog_manager FROM supervisor;
+REVOKE sales_manager FROM supervisor;
