@@ -15,7 +15,7 @@ from commands import command, CATEGORY_ORDERS
 from console import console, render_error
 from db import get_conn
 from validators import NonEmptyValidator, YesNoValidator, QuantityValidator
-from auth import ROLE_SALES_MANAGER
+from auth import auth_user, ROLE_SALES_MANAGER
 
 
 @dataclass
@@ -26,13 +26,13 @@ class Order:
     created_at: datetime
     updated_at: datetime
     warehouse_id: int
-
+    created_by: int
 
 @dataclass
 class OrderWithDetails(Order):
     warehouse_city: str
     warehouse_address: str
-
+    created_by_username: str
 
 @dataclass
 class OrderItem:
@@ -77,6 +77,7 @@ def _render_order(order: OrderWithDetails) -> None:
     table.add_row("Статус", order.status)
     table.add_row("Сумма", f"{order.total_amount:.2f}")
     table.add_row("Создан", order.created_at.strftime("%Y-%m-%d %H:%M:%S"))
+    table.add_row("Создал", order.created_by_username)
     table.add_row("Склад", f"{order.warehouse_city}, {order.warehouse_address}")
 
     panel = Panel(table, expand=False, title=f"[bold green]Заказ #{order.id}[/bold green]", border_style="green")
@@ -141,9 +142,10 @@ def list_orders() -> None:
     table.add_column("Статус", style="green", min_width=12)
     table.add_column("Сумма", style="magenta", justify="right")
     table.add_column("Создан", style="yellow", min_width=20)
+    table.add_column("Создал", style="cyan", min_width=15)
     table.add_column("Склад", style="blue", min_width=20)
 
-    with conn.cursor(row_factory=class_row(OrderWithDetails)) as cur:
+    with conn.cursor() as cur:
         cur.execute("""
             SELECT 
                 sales.orders.id,
@@ -153,30 +155,32 @@ def list_orders() -> None:
                 sales.orders.updated_at,
                 sales.orders.warehouse_id,
                 catalog.warehouses.city AS warehouse_city,
-                catalog.warehouses.address AS warehouse_address
+                catalog.warehouses.address AS warehouse_address,
+                auth.users.username AS created_by_username
             FROM sales.orders
             JOIN catalog.warehouses ON sales.orders.warehouse_id = catalog.warehouses.id
+            JOIN auth.users ON sales.orders.created_by = auth.users.id
             ORDER BY sales.orders.id DESC
         """)
-        orders = cur.fetchall()
+        rows = cur.fetchall()
 
-    for order in orders:
+    for row in rows:
         table.add_row(
-            str(order.id),
-            order.status,
-            f"{order.total_amount:.2f}",
-            order.created_at.strftime("%Y-%m-%d %H:%M"),
-            order.warehouse_city
+            str(row[0]),           # id
+            row[1],                # status
+            f"{row[2]:.2f}",       # total_amount
+            row[3].strftime("%Y-%m-%d %H:%M"),  # created_at
+            row[8],                # created_by_username
+            row[6]                 # warehouse_city
         )
 
     console.print(table)
-
 
 @command("show order", "информация о заказе", CATEGORY_ORDERS, [ROLE_SALES_MANAGER])
 def show_order(_id: str) -> None:
     conn = get_conn()
 
-    with conn.cursor(row_factory=class_row(OrderWithDetails)) as cur:
+    with conn.cursor() as cur:
         cur.execute("""
             SELECT 
                 sales.orders.id,
@@ -185,17 +189,33 @@ def show_order(_id: str) -> None:
                 sales.orders.created_at,
                 sales.orders.updated_at,
                 sales.orders.warehouse_id,
+                sales.orders.created_by,
                 catalog.warehouses.city AS warehouse_city,
-                catalog.warehouses.address AS warehouse_address
+                catalog.warehouses.address AS warehouse_address,
+                auth.users.username AS created_by_username
             FROM sales.orders
             JOIN catalog.warehouses ON sales.orders.warehouse_id = catalog.warehouses.id
+            JOIN auth.users ON sales.orders.created_by = auth.users.id
             WHERE sales.orders.id = %s
         """, (_id,))
-        order = cur.fetchone()
+        row = cur.fetchone()
 
-    if order is None:
-        render_error(f"Заказ  {_id} не найден")
+    if row is None:
+        render_error(f"Заказ {_id} не найден")
         return
+
+    order = OrderWithDetails(
+        id=row[0],
+        status=row[1],
+        total_amount=row[2],
+        created_at=row[3],
+        updated_at=row[4],
+        warehouse_id=row[5],
+        created_by=row[6],
+        warehouse_city=row[7],
+        warehouse_address=row[8],
+        created_by_username=row[9]
+    )
 
     _render_order(order)
     _render_order_items(int(_id))
@@ -204,9 +224,10 @@ def show_order(_id: str) -> None:
 @command("add order", "создать новый заказ", CATEGORY_ORDERS, [ROLE_SALES_MANAGER])
 def add_order() -> None:
     conn = get_conn()
+    user = auth_user()  # <-- получаем текущего пользователя
 
     with conn.cursor() as cur:
-        cur.execute("SELECT catalog.warehouses.id, catalog.warehouses.city FROM catalog.warehouses ORDER BY catalog.warehouses.city")
+        cur.execute("SELECT id, city FROM catalog.warehouses ORDER BY city")
         warehouses = cur.fetchall()
 
     if not warehouses:
@@ -222,8 +243,8 @@ def add_order() -> None:
 
     with conn.cursor() as cur:
         cur.execute(
-            "INSERT INTO sales.orders (warehouse_id, status) VALUES (%s, 'unpublished') RETURNING id",
-            (selected_warehouse_id,)
+            "INSERT INTO sales.orders (warehouse_id, status, created_by) VALUES (%s, 'unpublished', %s) RETURNING id",
+            (selected_warehouse_id, user.id)  # <-- добавляем created_by
         )
         order_id = cur.fetchone()[0]
         conn.commit()
