@@ -5,6 +5,8 @@ from typing import List, Optional
 
 from prompt_toolkit import prompt
 from prompt_toolkit.shortcuts import choice
+from prompt_toolkit.completion import WordCompleter
+
 from psycopg.rows import class_row
 from rich.panel import Panel
 from rich.table import Table
@@ -264,18 +266,41 @@ def _add_order_item(order_id: int) -> None:
         render_error("Все доступные товары уже добавлены в заказ")
         return
 
+    product_map = {str(p[0]): p for p in products}
+
+    product_choices = [f"{p[0]}: {p[1]} - {p[2]}" for p in products]
+
+    completer = WordCompleter(product_choices, ignore_case=True, sentence=True)
+
     console.print("[bold]Доступные товары:[/bold]")
-    for product in products:
-        console.print(f"  [cyan]{product[0]}[/cyan]: {product[1]} - {product[2]} (${product[3]:.2f})")
+
+    display_limit = min(10, len(products))
+
+    for product in products[:display_limit]:
+        console.print(f"  [cyan]{product[0]}[/cyan]: {product[1]} - {product[2]} ({product[3]:.2f})")
+    if len(products) > display_limit:
+        console.print(
+            f"[dim] всего {len(products) - display_limit} товаров. [/dim]")
 
     while True:
         try:
-            product_id = int(prompt("Введите ID товара: ", validator=NonEmptyValidator()).strip())
-            if any(product[0] == product_id for product in products):
-                break
-            render_error(f"Товар с ID {product_id} не найден или уже добавлен")
-        except ValueError:
-            render_error("ID должен быть числом")
+            user_input = prompt(
+                "Введите ID товара или начните вводить название/SKU : ",
+                validator=NonEmptyValidator(),
+                completer=completer
+            ).strip()
+
+            # Пытаемся извлечь ID из ввода (поддерживаем как "123", так и "123: SKU - Name")
+            parts = user_input.split(':')
+            if parts:
+                candidate_id = parts[0].strip()
+                if candidate_id in product_map:
+                    product = product_map[candidate_id]
+                    product_id = product[0]
+                    break
+            render_error("Товар не найден.")
+        except Exception:
+            render_error("error.")
 
     quantity = int(prompt("Количество: ", validator=QuantityValidator()).strip())
 
@@ -285,14 +310,14 @@ def _add_order_item(order_id: int) -> None:
 
     with conn.cursor() as cur:
         cur.execute(
-            "INSERT INTO sales.order_items (order_id, product_id, quantity, price, updated_at) VALUES (%s, %s, %s, %s, CURRENT_TIMESTAMP)",
+            "INSERT INTO sales.order_items (order_id, product_id, quantity, price, updated_at) VALUES (%s, %s, %s, "
+            "%s, CURRENT_TIMESTAMP)",
             (order_id, product_id, quantity, price)
         )
         conn.commit()
 
     _recalculate_order_total(order_id)
     console.print(f"[green]Товар добавлен в заказ #{order_id}[/green]")
-
 
 @command("add order_item", "добавить товар в заказ", CATEGORY_ORDERS)
 def add_order_item(order_id: str) -> None:
