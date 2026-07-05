@@ -28,22 +28,6 @@ COMMENT ON COLUMN auth.users.created_at IS 'Дата и время создан�
 COMMENT ON COLUMN auth.users.updated_at IS 'Дата и время последнего обновления';
 
 
+
 GRANT USAGE ON SCHEMA auth TO PUBLIC;
 GRANT SELECT ON auth.users TO PUBLIC;
-
-GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA auth TO catalog_manager;
-GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA auth TO catalog_manager;
-
-
-GRANT USAGE ON SCHEMA auth TO sales_manager;
-GRANT SELECT ON auth.users TO sales_manager;
-
-
-ALTER DEFAULT PRIVILEGES IN SCHEMA auth
-    GRANT SELECT ON TABLES TO PUBLIC;
-
-ALTER DEFAULT PRIVILEGES IN SCHEMA auth
-    GRANT ALL PRIVILEGES ON TABLES TO catalog_manager;
-
-ALTER DEFAULT PRIVILEGES IN SCHEMA auth
-    GRANT ALL PRIVILEGES ON SEQUENCES TO catalog_manager;
