@@ -154,11 +154,12 @@ def list_orders() -> None:
                 sales.orders.created_at,
                 sales.orders.updated_at,
                 sales.orders.warehouse_id,
-                catalog.warehouses.city AS warehouse_city,
+                catalog.cities.name AS warehouse_city,
                 catalog.warehouses.address AS warehouse_address,
                 auth.users.username AS created_by_username
             FROM sales.orders
             JOIN catalog.warehouses ON sales.orders.warehouse_id = catalog.warehouses.id
+            JOIN catalog.cities ON catalog.warehouses.city_id = catalog.cities.id
             JOIN auth.users ON sales.orders.created_by = auth.users.id
             ORDER BY sales.orders.id DESC
         """)
@@ -190,14 +191,15 @@ def show_order(_id: str) -> None:
                 sales.orders.updated_at,
                 sales.orders.warehouse_id,
                 sales.orders.created_by,
-                catalog.warehouses.city AS warehouse_city,
+                catalog.cities.name AS warehouse_city,
                 catalog.warehouses.address AS warehouse_address,
                 auth.users.username AS created_by_username
             FROM sales.orders
             JOIN catalog.warehouses ON sales.orders.warehouse_id = catalog.warehouses.id
+            JOIN catalog.cities ON catalog.warehouses.city_id = catalog.cities.id
             JOIN auth.users ON sales.orders.created_by = auth.users.id
             WHERE sales.orders.id = %s
-        """, (_id,))
+        """)
         row = cur.fetchone()
 
     if row is None:
