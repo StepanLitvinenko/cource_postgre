@@ -47,11 +47,3 @@ ALTER DEFAULT PRIVILEGES IN SCHEMA auth
 
 ALTER DEFAULT PRIVILEGES IN SCHEMA auth
     GRANT ALL PRIVILEGES ON SEQUENCES TO catalog_manager;
-
-
--- Пароли: cat_man/cat_pass, sale_man/sale_pass
-INSERT INTO auth.users (username, password, role)
-VALUES
-    ('cat_man', crypt('cat_pass', gen_salt('bf')), 'catalog_manager'),
-    ('sale_man', crypt('sale_pass', gen_salt('bf')), 'sales_manager')
-ON CONFLICT (username) DO NOTHING;
