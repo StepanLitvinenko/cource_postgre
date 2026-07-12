@@ -2,9 +2,10 @@ from rich.panel import Panel
 
 from console import console
 from commands import get_commands, CATEGORIES, command, CATEGORY_GENERAL, Command
+from auth import ROLE_CATALOG_MANAGER, ROLE_SALES_MANAGER, ALL_ROLES
 
 
-@command("help", "эта справка", CATEGORY_GENERAL)
+@command("help", "эта справка", CATEGORY_GENERAL, ALL_ROLES)
 def show_help() -> None:
     """Справка - вывод через rich"""
 
@@ -36,12 +37,12 @@ def show_help() -> None:
     console.print()
 
 
-@command("clear", "очистить экран", CATEGORY_GENERAL)
+@command("clear", "очистить экран", CATEGORY_GENERAL, ALL_ROLES)
 def clear_screen() -> None:
     """Очистить экран"""
     console.clear()
 
 
-@command("exit", "выход", CATEGORY_GENERAL)
+@command("exit", "выход", CATEGORY_GENERAL, ALL_ROLES)
 def exit_app() -> None:
     """Выход - ничего не делает, обрабатывается в main loop"""

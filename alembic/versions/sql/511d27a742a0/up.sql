@@ -50,7 +50,6 @@ CREATE TABLE sales.order_items (
 );
 
 COMMENT ON TABLE sales.order_items IS 'Позиции заказа';
-COMMENT ON COLUMN sales.order_items.id IS 'Уникальный идентификатор позиции';
 COMMENT ON COLUMN sales.order_items.order_id IS 'ID заказа';
 COMMENT ON COLUMN sales.order_items.product_id IS 'ID товара';
 COMMENT ON COLUMN sales.order_items.quantity IS 'Количество товара';
